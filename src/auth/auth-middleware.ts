@@ -1,8 +1,12 @@
-import express, {Request, Response, NextFunction} from "express"
+import express, { Request, Response, NextFunction } from "express"
 import { AppDataSource } from "../data-source.js"
 import Session from "../entity/Session.js"
 
-export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
+export async function authMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const token = extractToken(req)
     res.locals.user = await findUserBySessionToken(token)

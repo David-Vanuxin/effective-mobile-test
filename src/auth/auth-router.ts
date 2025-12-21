@@ -37,7 +37,7 @@ authRouter.post("/log-in", async (req, res) => {
 
   await AppDataSource.getRepository(Session).save(session)
 
-  res.json({ token })
+  res.json({ id: user.id, token })
 })
 
 export default authRouter

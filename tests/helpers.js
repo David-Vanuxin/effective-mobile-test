@@ -17,9 +17,8 @@ export async function request(method, endpoint, data = null, authToken = null) {
     const json = await res.json()
     // console.dir({method, endpoint, json})
     return json
-
   } catch (err) {
-    console.dir({method, endpoint, data, authToken})
+    console.dir({ method, endpoint, data, authToken })
     console.error(err)
 
     const res = await fetch(origin + endpoint, {
@@ -29,10 +28,8 @@ export async function request(method, endpoint, data = null, authToken = null) {
     })
 
     const txt = await res.text()
-    console.dir({method, endpoint, txt})
-
+    console.dir({ method, endpoint, txt })
   }
-
 }
 
 export function generateRandomUserData() {
