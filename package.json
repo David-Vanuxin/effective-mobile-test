@@ -1,0 +1,20 @@
+{
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon ./build/index.js",
+    "types": "tsc --watch",
+    "build": "tsc",
+    "test": "node --test",
+    "format": "prettier src tests --write",
+    "start": "node ./build/index.js"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "nodemon": "^3.1.11",
+    "prettier": "^3.7.4",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
