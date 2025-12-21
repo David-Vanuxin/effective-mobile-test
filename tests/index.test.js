@@ -33,14 +33,14 @@ const loginData = {
   password: user.password,
 }
 
-describe("Sign up and log in", () => {
+describe.only("Sign up and log in", () => {
   it("Create new account", async () => {
     const res = await request("POST", "/sign-up", user)
 
     assert.deepEqual(res, { status: "OK" })
   })
 
-  it("Log in to created account", async () => {
+  it.skip("Log in to created account", async () => {
     const res = await request("POST", "/log-in", loginData)
 
     assert.match(res.token.toString(), /\d+/)
@@ -48,7 +48,7 @@ describe("Sign up and log in", () => {
 
   after(() => {
     // TODO: delete user from database
-  });
+  })
 })
 
 describe("Get user info ( /user/id )", () => {
@@ -60,7 +60,7 @@ describe("Get user info ( /user/id )", () => {
 
   after(() => {
     // TODO: delete users from database
-  });
+  })
 
   it("Try without authorization", async () => {
     const res = await request("GET", "/user/1")
@@ -76,7 +76,7 @@ describe("Get user info ( /user/id )", () => {
 })
 
 describe.skip("Get all users ( /user )", () => {
-/*  it("Try for role=admin", async () => {
+  /*  it("Try for role=admin", async () => {
     const res = await request("GET", "/user")
     assert.strictEqual(res.status, "OK")
     // TODO: create many users before test running

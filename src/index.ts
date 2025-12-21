@@ -1,4 +1,14 @@
 import express, { Request } from "express"
+import "reflect-metadata"
+import { AppDataSource } from "./data-source.js"
+import User from "./entity/User.js"
+
+try {
+  await AppDataSource.initialize()
+  console.log("Data Source has been initialized!")
+} catch (error) {
+  console.log(error)
+}
 
 const app = express()
 const port = 3000
@@ -14,7 +24,9 @@ app.use((req, res, next) => {
   next()
 })
 
-app.post("/sign-up", (req, res) => {
+app.post("/sign-up", async (req, res) => {
+  const user = await AppDataSource.getRepository(User).create(req.body)
+  const results = await AppDataSource.getRepository(User).save(user)
   res.json({ status: "OK" })
 })
 
@@ -41,7 +53,7 @@ app.get("/user/:id", (req, res) => {
     res.status(400)
     res.json({ error: "Access denied" })
     return
-  } 
+  }
 
   const user = {
     id: req.params.id,
