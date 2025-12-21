@@ -1,24 +1,10 @@
 import { describe, it, before, after } from "node:test"
 import { strict as assert } from "node:assert"
-import { request } from "./helpers.js"
+import { request, generateRandomUserData } from "./helpers.js"
 
-const user = {
-  firstname: "Иванов",
-  secondname: "Иван",
-  patronymic: "Иванович",
-  email: "test@email.com",
-  password: "1234",
-  birthdate: Date.now(),
-}
-
-const loginData = {
-  email: user.email,
-  password: user.password,
-}
-
-describe.only("Sign up and log in", () => {
+describe("Sign up and log in", () => {
   it("Create new account", async () => {
-    const res = await request("POST", "/auth/sign-up", user)
+    const res = await request("POST", "/auth/sign-up", generateRandomUserData())
 
     assert.deepEqual(res, { status: "OK" })
   })
@@ -33,6 +19,10 @@ describe.only("Sign up and log in", () => {
   })
 
   it("Log in with invalid password", async () => {
+    const user = generateRandomUserData()
+
+    await request("POST", "/auth/sign-up", user)
+
     const res = await request("POST", "/auth/log-in", {
       email: user.email,
       password: "4321",
@@ -42,6 +32,10 @@ describe.only("Sign up and log in", () => {
   })
 
   it("Perfect log in", async () => {
+    const user = generateRandomUserData()
+
+    await request("POST", "/auth/sign-up", user)
+
     const res = await request("POST", "/auth/log-in", {
       email: user.email,
       password: user.password,
@@ -50,7 +44,7 @@ describe.only("Sign up and log in", () => {
     assert.match(res.token, /\d+/)
   })
 
-  after(() => {
-    // TODO: delete user from database
+  after(async () => {
+    await request("POST", "/purge")
   })
 })

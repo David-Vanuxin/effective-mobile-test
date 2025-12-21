@@ -4,6 +4,7 @@ import { AppDataSource } from "./data-source.js"
 import User from "./entity/User.js"
 import Session from "./entity/Session.js"
 import authRouter from "./auth/auth-router.js"
+import userRouter from "./user/user-router.js"
 
 try {
   await AppDataSource.initialize()
@@ -27,42 +28,14 @@ app.use((req, res, next) => {
 })
 
 app.use("/auth", authRouter)
+app.use("/user", userRouter)
 
-const trueToken = 123456789
-
-function userHasAccess(req: Request) {
-  const authHeader = req.get("Authorization")
-
-  if (authHeader === undefined) return false
-
-  const token = authHeader.split(" ")[1]
-
-  if (token !== trueToken.toString()) return false
-
-  return true
-}
-
-app.get("/user/:id", (req, res) => {
-  if (!userHasAccess(req)) {
-    res.status(400)
-    res.json({ error: "Access denied" })
-    return
-  }
-
-  const user = {
-    id: req.params.id,
-    firstname: "Иванов",
-    secondname: "Иван",
-    patronymic: "Иванович",
-    email: "test@email.com",
-    password: "1234",
-    birthdate: Date.now(),
-  }
-  res.json(user)
-})
-
-app.get("/user/", (req, res) => {
-  res.json({ status: "in development" })
+// DELETE THIS !!!
+app.post("/purge", async (req, res) => {
+  await AppDataSource.getRepository(Session).clear()
+  await AppDataSource.getRepository(User).clear()
+  console.log("WARNING! Database purged")
+  return res.json({ status: "purged" })
 })
 
 app.listen(port, () => {
