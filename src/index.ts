@@ -2,6 +2,8 @@ import express, { Request } from "express"
 import "reflect-metadata"
 import { AppDataSource } from "./data-source.js"
 import User from "./entity/User.js"
+import Session from "./entity/Session.js"
+import authRouter from "./auth/auth-router.js"
 
 try {
   await AppDataSource.initialize()
@@ -24,15 +26,7 @@ app.use((req, res, next) => {
   next()
 })
 
-app.post("/sign-up", async (req, res) => {
-  const user = await AppDataSource.getRepository(User).create(req.body)
-  const results = await AppDataSource.getRepository(User).save(user)
-  res.json({ status: "OK" })
-})
-
-app.post("/log-in", (req, res) => {
-  res.json({ token: Math.round(Math.random() * 1e12) })
-})
+app.use("/auth", authRouter)
 
 const trueToken = 123456789
 

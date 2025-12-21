@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from "typeorm"
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm"
+import Session from "./Session.js"
 
 @Entity()
 export default class User {
@@ -35,4 +36,7 @@ export default class User {
     default: true,
   })
   active: boolean
+
+  @OneToMany(() => Session, session => session.user)
+  sessions: Session[]
 }
