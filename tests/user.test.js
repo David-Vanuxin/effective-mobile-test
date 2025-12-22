@@ -115,3 +115,91 @@ describe("Get all users ( /user )", function () {
     assert.strictEqual(res.length, 4)
   })
 })
+
+describe("Block user", async () => {
+  before(async () => {
+    await request("POST", "/purge")
+  })
+
+  after(async () => {
+    await request("POST", "/purge")
+  })
+
+  it("User blocks himself", async () => {
+    const user = generateRandomUserData()
+    await request("POST", "/auth/sign-up", user)
+    const { email, password } = user
+    const { id, token } = await request("POST", "/auth/log-in", {
+      email,
+      password,
+    })
+
+    const newUserData = await request(
+      "PUT",
+      `/user/${id}/block`,
+      {
+        active: false,
+      },
+      token,
+    )
+
+    assert.strictEqual(newUserData.active, false)
+  })
+
+  it("Admin blocks user", async () => {
+    const admin = generateRandomUserData()
+    admin.role = "admin"
+    await request("POST", "/auth/sign-up", admin)
+    const user = generateRandomUserData()
+    await request("POST", "/auth/sign-up", user)
+
+    const { email, password } = admin
+    const { token } = await request("POST", "/auth/log-in", {
+      email,
+      password,
+    })
+
+    const users = await request("GET", "/user/", null, token)
+
+    const { id: userID } = users.find(u => u.role === "user")
+
+    const newUserData = await request(
+      "PUT",
+      `/user/${userID}/block`,
+      {
+        active: false,
+      },
+      token,
+    )
+
+    assert.strictEqual(userID, newUserData.id)
+    assert.strictEqual(newUserData.active, false)
+  })
+
+  it("User try block another user", async () => {
+    const { email, password } = await createTestUser()
+    await createTestUser()
+
+    const { id, token } = await request("POST", "/auth/log-in", {
+      email,
+      password,
+    })
+
+    const res = await request(
+      "PUT",
+      `/user/${id + 1}`, // id + 1 - second user has that id
+      { active: false },
+      token,
+    )
+
+    assert.deepEqual(res, { error: "Access denied" })
+  })
+})
+
+async function createTestUser(role = "user") {
+  const user = generateRandomUserData()
+  user.role = role
+  await request("POST", "/auth/sign-up", user)
+
+  return user
+}

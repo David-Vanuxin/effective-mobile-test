@@ -20,7 +20,7 @@ userRouter.get("/", async (req, res) => {
   res.json(users)
 })
 
-userRouter.get("/:id", async (req, res) => {
+userRouter.use("/:id", async (req, res, next) => {
   if (
     res.locals.user.id !== parseInt(req.params.id) &&
     res.locals.user.role !== "admin"
@@ -29,7 +29,10 @@ userRouter.get("/:id", async (req, res) => {
     res.json({ error: "Access denied" })
     return
   }
+  next()
+})
 
+userRouter.get("/:id", async (req, res) => {
   const user = await AppDataSource.getRepository(User).findOneBy({
     id: parseInt(req.params.id),
   })
@@ -40,10 +43,26 @@ userRouter.get("/:id", async (req, res) => {
   res.json({ error: "User not found" })
 })
 
-// bun
-userRouter.put("/:id", async (req, res) => {
-  res.status(400)
-  res.json({ error: "Access denied" })
+userRouter.put("/:id/block", async (req, res) => {
+  try {
+    const user = await AppDataSource.getRepository(User).findOneBy({
+      id: parseInt(req.params.id),
+    })
+
+    if (user === null) {
+      res.status(400)
+      return res.json({ error: "User not found" })
+    }
+
+    user.active = false
+
+    await AppDataSource.getRepository(User).save(user)
+    res.json(user)
+  } catch (err) {
+    console.error(err)
+    res.status(500)
+    res.json({ error: "Server error" })
+  }
 })
 
 export default userRouter
