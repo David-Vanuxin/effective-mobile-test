@@ -6,7 +6,7 @@
     "build": "tsc",
     "test": "node --test",
     "format": "prettier src tests --write",
-    "start": "node ./build/index.js"
+    "start": "export NODE_ENV=production && node ./build/index.js"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
