@@ -1,147 +1,204 @@
 import { describe, it, before, after, afterEach } from "node:test"
 import { strict as assert } from "node:assert"
-import { request, generateRandomUserData } from "./helpers.js"
+import { generateRandomUserData, createTestUser } from "./helpers.js"
+import request from "supertest"
+
+import { AppDataSource } from "../build/data-source.js"
+import User from "../build/entity/User.js"
+import Session from "../build/entity/Session.js"
+import app from "../build/app.js"
 
 const testUser = generateRandomUserData()
 
 describe("Get user info ( /user/id )", async () => {
   before(async () => {
-    await request("POST", "/purge")
+    await AppDataSource.initialize()
+  })
+
+  afterEach(async () => {
+    await AppDataSource.getRepository(Session).clear()
+    await AppDataSource.getRepository(User).clear()
+  })
+
+  after(async () => {
+    await AppDataSource.destroy()
   })
 
   it("Try without authorization", async () => {
-    const res = await request("GET", "/user/1")
-    assert.deepEqual(res, { error: "Authorization error" })
+    await request(app)
+      .get("/user/1")
+      .expect(400, { error: "Authorization error" })
   })
 
   it("For role=user try fetch another user's info", async () => {
-    const user = generateRandomUserData()
-    await request("POST", "/auth/sign-up", user)
-    await request("POST", "/auth/sign-up", generateRandomUserData())
-    const { token } = await request("POST", "/auth/log-in", {
+    const user = await createTestUser()
+    await createTestUser()
+
+    const loginRes = await request(app).post("/auth/log-in").send({
       email: user.email,
       password: user.password,
     })
-    const res = await request("GET", "/user/2", null, token)
-    assert.deepEqual(res, { error: "Access denied" })
+
+    const token = loginRes.body.token
+
+    await request(app)
+      .get("/user/2")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(402, { error: "Access denied" })
   })
 
   it("For role=admin fetch another user's info", async () => {
-    const admin = generateRandomUserData()
-    admin.role = "admin"
+    const admin = await createTestUser("admin")
+    const user = await createTestUser()
 
-    const user = generateRandomUserData()
-
-    await request("POST", "/auth/sign-up", admin)
-
-    await request("POST", "/auth/sign-up", user)
-
-    const { token } = await request("POST", "/auth/log-in", {
+    const adminLoginRes = await request(app).post("/auth/log-in").send({
       email: admin.email,
       password: admin.password,
     })
 
-    const { id } = await request("POST", "/auth/log-in", {
+    const adminToken = adminLoginRes.body.token
+
+    const userLoginRes = await request(app).post("/auth/log-in").send({
       email: user.email,
       password: user.password,
     })
 
-    const userInfo = await request("GET", "/user/" + id, null, token)
+    const userID = userLoginRes.body.id
 
-    assert.strictEqual(userInfo.id, id)
+    const userInfoRes = await request(app)
+      .get("/user/" + userID)
+      .set("Authorization", `Bearer ${adminToken}`)
+
+    const userInfo = userInfoRes.body
+
+    assert.strictEqual(userInfo.id, userID)
     assert.strictEqual(userInfo.role, "user")
   })
 
   it("User fetch own info", async () => {
-    const user = generateRandomUserData()
-    await request("POST", "/auth/sign-up", user)
+    const user = await createTestUser()
 
     const { email, password } = user
-    const { id, token } = await request("POST", "/auth/log-in", {
-      email,
-      password,
-    })
+    const loginRes = await request(app)
+      .post("/auth/log-in")
+      .send({
+        email,
+        password,
+      })
+      .expect(200)
 
-    const userInfo = await request("GET", "/user/" + id, null, token)
+    const { id, token } = loginRes.body
+
+    const userInfoRes = await request(app)
+      .get("/user/" + id)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+
+    const userInfo = userInfoRes.body
 
     assert.strictEqual(userInfo.id, id)
-  })
-
-  afterEach(async () => {
-    await request("POST", "/purge")
   })
 })
 
 describe("Get all users ( /user )", function () {
   before(async () => {
-    await request("POST", "/auth/sign-up", testUser)
+    await AppDataSource.initialize()
   })
 
   after(async () => {
-    await request("POST", "/purge")
+    await AppDataSource.destroy()
+  })
+
+  afterEach(async () => {
+    await AppDataSource.getRepository(Session).clear()
+    await AppDataSource.getRepository(User).clear()
   })
 
   it("Try without authorization", async () => {
-    const res = await request("GET", "/user/")
-    assert.deepEqual(res, { error: "Authorization error" })
+    await request(app)
+      .get("/user/")
+      .expect(400, { error: "Authorization error" })
   })
 
   it("Try for role=user", async () => {
-    const { token } = await request("POST", "/auth/log-in", {
-      email: testUser.email,
-      password: testUser.password,
+    const user = await createTestUser()
+
+    const res = await request(app).post("/auth/log-in").send({
+      email: user.email,
+      password: user.password,
     })
-    const res = await request("GET", "/user/", null, token)
-    assert.deepEqual(res, { error: "Access denied" })
+
+    const token = res.body.token
+
+    await request(app)
+      .get("/user/")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(401, { error: "Access denied" })
   })
 
   it("Try for role=admin", async () => {
-    await request("POST", "/purge")
+    const admin = await createTestUser("admin")
+    await createTestUser()
+    await createTestUser()
+    await createTestUser()
 
-    const admin = generateRandomUserData()
-    admin.role = "admin"
-    await request("POST", "/auth/sign-up", admin)
+    const loginRes = await request(app)
+      .post("/auth/log-in")
+      .send({
+        email: admin.email,
+        password: admin.password,
+      })
+      .expect(200)
 
-    await request("POST", "/auth/sign-up", generateRandomUserData())
-    await request("POST", "/auth/sign-up", generateRandomUserData())
-    await request("POST", "/auth/sign-up", generateRandomUserData())
+    const token = loginRes.body.token
 
-    const { token } = await request("POST", "/auth/log-in", {
-      email: admin.email,
-      password: admin.password,
-    })
-    const res = await request("GET", "/user/", null, token)
+    const res = await request(app)
+      .get("/user/")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
 
-    assert.strictEqual(res.length, 4)
+    assert.strictEqual(res.body.length, 4)
   })
 })
 
 describe("Block user", async () => {
   before(async () => {
-    await request("POST", "/purge")
+    await AppDataSource.initialize()
+  })
+
+  afterEach(async () => {
+    await AppDataSource.getRepository(Session).clear()
+    await AppDataSource.getRepository(User).clear()
   })
 
   after(async () => {
-    await request("POST", "/purge")
+    await AppDataSource.destroy()
   })
 
   it("User blocks himself", async () => {
     const user = generateRandomUserData()
-    await request("POST", "/auth/sign-up", user)
-    const { email, password } = user
-    const { id, token } = await request("POST", "/auth/log-in", {
-      email,
-      password,
-    })
+    await request(app).post("/auth/sign-up").send(user)
 
-    const newUserData = await request(
-      "PUT",
-      `/user/${id}/block`,
-      {
+    const { email, password } = user
+    const loginRes = await request(app)
+      .post("/auth/log-in")
+      .send({
+        email,
+        password,
+      })
+      .expect(200)
+
+    const { id, token } = loginRes.body
+
+    const updateRes = await request(app)
+      .put(`/user/${id}/block`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
         active: false,
-      },
-      token,
-    )
+      })
+      .expect(200)
+
+    const newUserData = updateRes.body
 
     assert.strictEqual(newUserData.active, false)
   })
@@ -149,57 +206,61 @@ describe("Block user", async () => {
   it("Admin blocks user", async () => {
     const admin = generateRandomUserData()
     admin.role = "admin"
-    await request("POST", "/auth/sign-up", admin)
-    const user = generateRandomUserData()
-    await request("POST", "/auth/sign-up", user)
+    await request(app).post("/auth/sign-up").send(admin)
+
+    await createTestUser()
 
     const { email, password } = admin
-    const { token } = await request("POST", "/auth/log-in", {
-      email,
-      password,
-    })
+    const loginRes = await request(app)
+      .post("/auth/log-in")
+      .send({
+        email,
+        password,
+      })
+      .expect(200)
 
-    const users = await request("GET", "/user/", null, token)
+    const token = loginRes.body.token
 
+    const usersRes = await request(app)
+      .get("/user/")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+
+    const users = usersRes.body
     const { id: userID } = users.find(u => u.role === "user")
 
-    const newUserData = await request(
-      "PUT",
-      `/user/${userID}/block`,
-      {
+    const updateRes = await request(app)
+      .put(`/user/${userID}/block`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
         active: false,
-      },
-      token,
-    )
+      })
+      .expect(200)
+
+    const newUserData = updateRes.body
 
     assert.strictEqual(userID, newUserData.id)
     assert.strictEqual(newUserData.active, false)
   })
 
   it("User try block another user", async () => {
-    const { email, password } = await createTestUser()
+    const user1 = await createTestUser()
     await createTestUser()
 
-    const { id, token } = await request("POST", "/auth/log-in", {
-      email,
-      password,
-    })
+    const loginRes = await request(app)
+      .post("/auth/log-in")
+      .send({
+        email: user1.email,
+        password: user1.password,
+      })
+      .expect(200)
 
-    const res = await request(
-      "PUT",
-      `/user/${id + 1}`, // id + 1 - second user has that id
-      { active: false },
-      token,
-    )
+    const { id, token } = loginRes.body
 
-    assert.deepEqual(res, { error: "Access denied" })
+    await request(app)
+      .put(`/user/${id + 1}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ active: false })
+      .expect(402, { error: "Access denied" })
   })
 })
-
-async function createTestUser(role = "user") {
-  const user = generateRandomUserData()
-  user.role = role
-  await request("POST", "/auth/sign-up", user)
-
-  return user
-}
