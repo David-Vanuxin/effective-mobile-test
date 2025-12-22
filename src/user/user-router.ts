@@ -9,11 +9,8 @@ const userRouter = express.Router()
 userRouter.use(authMiddleware)
 
 userRouter.get("/", async (req, res) => {
-  if (res.locals.user.role !== "admin") {
-    res.status(401)
-    res.json({ error: "Access denied" })
-    return
-  }
+  if (res.locals.user.role !== "admin")
+    return res.status(401).json({ error: "Access denied" })
 
   const users = await AppDataSource.getRepository(User).find()
 
@@ -25,9 +22,7 @@ userRouter.use("/:id", async (req, res, next) => {
     res.locals.user.id !== parseInt(req.params.id) &&
     res.locals.user.role !== "admin"
   ) {
-    res.status(402)
-    res.json({ error: "Access denied" })
-    return
+    return res.status(402).json({ error: "Access denied" })
   }
   next()
 })
@@ -39,8 +34,7 @@ userRouter.get("/:id", async (req, res) => {
 
   if (user) return res.json(user)
 
-  res.status(404)
-  res.json({ error: "User not found" })
+  res.status(404).json({ error: "User not found" })
 })
 
 userRouter.put("/:id/block", async (req, res) => {
@@ -50,8 +44,7 @@ userRouter.put("/:id/block", async (req, res) => {
     })
 
     if (user === null) {
-      res.status(400)
-      return res.json({ error: "User not found" })
+      return res.status(400).json({ error: "User not found" })
     }
 
     user.active = false
@@ -59,9 +52,7 @@ userRouter.put("/:id/block", async (req, res) => {
     await AppDataSource.getRepository(User).save(user)
     res.json(user)
   } catch (err) {
-    console.error(err)
-    res.status(500)
-    res.json({ error: "Server error" })
+    res.status(500).json({ error: "Server error" })
   }
 })
 

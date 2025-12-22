@@ -12,9 +12,7 @@ export async function authMiddleware(
     res.locals.user = await findUserBySessionToken(token)
     next()
   } catch (err) {
-    console.error(err)
-    res.status(400)
-    res.json({ error: "Authorization error" })
+    res.status(400).json({ error: "Authorization error" })
   }
 }
 

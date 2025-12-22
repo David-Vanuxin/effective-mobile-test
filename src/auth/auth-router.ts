@@ -17,15 +17,11 @@ authRouter.post("/log-in", async (req, res) => {
   })
 
   if (user === null) {
-    res.status(400)
-    res.json({ error: "User not found" })
-    return
+    return res.status(400).json({ error: "User not found" })
   }
 
   if (user.password !== req.body.password) {
-    res.status(400)
-    res.json({ error: "Invalid password" })
-    return
+    return res.status(400).json({ error: "Invalid password" })
   }
 
   const token = Math.round(Math.random() * 1e12).toString()
