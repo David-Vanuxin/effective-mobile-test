@@ -21,7 +21,7 @@ POST /auth/sign-up
 ```
 
 **Тело запроса:**
-```json
+```jsonc
 {
   "firstname": "Иванов",
   "secondname": "Иван",
@@ -29,7 +29,7 @@ POST /auth/sign-up
   "email": "user@example.com",
   "password": "1234",
   "birthdate": 1698765432000,
-  "role": "user"  // или "admin" 
+  "role": "user"  // или "admin"
 }
 ```
 
@@ -84,7 +84,7 @@ Authorization: Bearer {token}
 - `401: {"error": "Access denied"}` - недостаточно прав (для обычного пользователя, запрашивающего чужую информацию)
 
 **Успешный ответ:**
-```json
+```jsonc
 {
   "id": 1,
   "firstname": "Иванов",
