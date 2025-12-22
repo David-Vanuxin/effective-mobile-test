@@ -38,6 +38,10 @@ app.post("/purge", async (req, res) => {
   return res.json({ status: "purged" })
 })
 
+app.use((req, res, next) => {
+  res.status(404).send("Invalid path")
+})
+
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`)
 })
