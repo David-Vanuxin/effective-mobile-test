@@ -6,6 +6,8 @@ import { AppDataSource } from "../data-source.js"
 const authRouter = express.Router()
 
 authRouter.post("/sign-up", async (req, res) => {
+  req.body.role = "user"
+  req.body.actve = true
   const user = await AppDataSource.getRepository(User).create(req.body)
   await AppDataSource.getRepository(User).save(user)
   res.json({ status: "OK" })

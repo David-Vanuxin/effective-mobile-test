@@ -1,6 +1,6 @@
 import { describe, it, before, after, afterEach } from "node:test"
 import { strict as assert } from "node:assert"
-import { generateRandomUserData, createTestUser } from "./helpers.js"
+import { generateRandomUserData, createTestUser, createAdmin, logIn } from "./helpers.js"
 import request from "supertest"
 
 import { AppDataSource } from "../build/data-source.js"
@@ -48,22 +48,11 @@ describe("Get user info ( /user/id )", async () => {
   })
 
   it("For role=admin fetch another user's info", async () => {
-    const admin = await createTestUser("admin")
+    const admin = await createAdmin(AppDataSource)
     const user = await createTestUser()
 
-    const adminLoginRes = await request(app).post("/auth/log-in").send({
-      email: admin.email,
-      password: admin.password,
-    })
-
-    const adminToken = adminLoginRes.body.token
-
-    const userLoginRes = await request(app).post("/auth/log-in").send({
-      email: user.email,
-      password: user.password,
-    })
-
-    const userID = userLoginRes.body.id
+    const { token: adminToken } = await logIn(admin.email, admin.password)
+    const { id: userID  } = await logIn(user.email, user.password)
 
     const userInfoRes = await request(app)
       .get("/user/" + userID)
@@ -137,20 +126,12 @@ describe("Get all users ( /user )", function () {
   })
 
   it("Try for role=admin", async () => {
-    const admin = await createTestUser("admin")
-    await createTestUser()
-    await createTestUser()
-    await createTestUser()
+    const { email, password } = await createAdmin()
+    const { id, token } = await logIn(email, password)
 
-    const loginRes = await request(app)
-      .post("/auth/log-in")
-      .send({
-        email: admin.email,
-        password: admin.password,
-      })
-      .expect(200)
-
-    const token = loginRes.body.token
+    await createTestUser()
+    await createTestUser()
+    await createTestUser()
 
     const res = await request(app)
       .get("/user/")
@@ -204,43 +185,24 @@ describe("Block user", async () => {
   })
 
   it("Admin blocks user", async () => {
-    const admin = generateRandomUserData()
-    admin.role = "admin"
-    await request(app).post("/auth/sign-up").send(admin)
+    const { email, password } = await createAdmin()
+    const { token: adminAuthToken } = await logIn(email, password)
 
-    await createTestUser()
-
-    const { email, password } = admin
-    const loginRes = await request(app)
-      .post("/auth/log-in")
-      .send({
-        email,
-        password,
-      })
-      .expect(200)
-
-    const token = loginRes.body.token
-
-    const usersRes = await request(app)
-      .get("/user/")
-      .set("Authorization", `Bearer ${token}`)
-      .expect(200)
-
-    const users = usersRes.body
-    const { id: userID } = users.find(u => u.role === "user")
+    const { id: testUserEmail, password: testUserPwd } = await createTestUser()
+    const { id: testUserID } = await logIn(testUserEmail, testUserPwd)
 
     const updateRes = await request(app)
-      .put(`/user/${userID}/block`)
-      .set("Authorization", `Bearer ${token}`)
+      .put(`/user/${testUserID}/block`)
+      .set("Authorization", `Bearer ${adminAuthToken}`)
       .send({
         active: false,
       })
       .expect(200)
 
-    const newUserData = updateRes.body
+    const { id, active } = updateRes.body
 
-    assert.strictEqual(userID, newUserData.id)
-    assert.strictEqual(newUserData.active, false)
+    assert.strictEqual(id, testUserID)
+    assert.strictEqual(active, false)
   })
 
   it("User try block another user", async () => {

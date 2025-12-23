@@ -1,6 +1,6 @@
 import { describe, it, before, after, afterEach } from "node:test"
 import { strict as assert } from "node:assert"
-import { generateRandomUserData, createTestUser } from "./helpers.js"
+import { generateRandomUserData, createTestUser, logIn } from "./helpers.js"
 import request from "supertest"
 
 import { AppDataSource } from "../build/data-source.js"
@@ -63,5 +63,15 @@ describe("Sign up and log in", () => {
       .expect(200)
 
     assert.match(res.body.token, /\d+/)
+  })
+
+  it("Try create admin account", async () => {
+    const { email, password } = await createTestUser("admin")
+
+    const { id, token } = await logIn(email, password)
+
+    const res = await request(app).get(`/user/${id}`).set("Authorization", `Bearer ${token}`)
+
+    assert.notStrictEqual(res.body.role, "admin")
   })
 })
