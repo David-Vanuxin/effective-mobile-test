@@ -1,6 +1,11 @@
 import { describe, it, before, after, afterEach } from "node:test"
 import { strict as assert } from "node:assert"
-import { generateRandomUserData, createTestUser, createAdmin, logIn } from "./helpers.js"
+import {
+  generateRandomUserData,
+  createTestUser,
+  createAdmin,
+  logIn,
+} from "./helpers.js"
 import request from "supertest"
 
 import { AppDataSource } from "../build/data-source.js"
@@ -31,18 +36,14 @@ describe("Get user info ( /user/id )", async () => {
   })
 
   it("For role=user try fetch another user's info", async () => {
-    const user = await createTestUser()
-    await createTestUser()
+    const user1 = await createTestUser()
+    const user2 = await createTestUser()
 
-    const loginRes = await request(app).post("/auth/log-in").send({
-      email: user.email,
-      password: user.password,
-    })
-
-    const token = loginRes.body.token
+    const { id: anotherUserID } = await logIn(user1.email, user1.password)
+    const { token } = await logIn(user2.email, user2.password)
 
     await request(app)
-      .get("/user/2")
+      .get(`/user/2${anotherUserID}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(402, { error: "Access denied" })
   })
@@ -52,7 +53,7 @@ describe("Get user info ( /user/id )", async () => {
     const user = await createTestUser()
 
     const { token: adminToken } = await logIn(admin.email, admin.password)
-    const { id: userID  } = await logIn(user.email, user.password)
+    const { id: userID } = await logIn(user.email, user.password)
 
     const userInfoRes = await request(app)
       .get("/user/" + userID)
@@ -66,17 +67,7 @@ describe("Get user info ( /user/id )", async () => {
 
   it("User fetch own info", async () => {
     const user = await createTestUser()
-
-    const { email, password } = user
-    const loginRes = await request(app)
-      .post("/auth/log-in")
-      .send({
-        email,
-        password,
-      })
-      .expect(200)
-
-    const { id, token } = loginRes.body
+    const { id, token } = await logIn(user.email, user.password)
 
     const userInfoRes = await request(app)
       .get("/user/" + id)
@@ -86,6 +77,11 @@ describe("Get user info ( /user/id )", async () => {
     const userInfo = userInfoRes.body
 
     assert.strictEqual(userInfo.id, id)
+
+    // object user don't have this properties
+    delete userInfo.id
+    delete userInfo.active
+    assert.deepEqual(user, userInfo)
   })
 })
 
@@ -110,14 +106,8 @@ describe("Get all users ( /user )", function () {
   })
 
   it("Try for role=user", async () => {
-    const user = await createTestUser()
-
-    const res = await request(app).post("/auth/log-in").send({
-      email: user.email,
-      password: user.password,
-    })
-
-    const token = res.body.token
+    const { email, password } = await createTestUser()
+    const { token } = await logIn(email, password)
 
     await request(app)
       .get("/user/")
@@ -157,19 +147,8 @@ describe("Block user", async () => {
   })
 
   it("User blocks himself", async () => {
-    const user = generateRandomUserData()
-    await request(app).post("/auth/sign-up").send(user)
-
-    const { email, password } = user
-    const loginRes = await request(app)
-      .post("/auth/log-in")
-      .send({
-        email,
-        password,
-      })
-      .expect(200)
-
-    const { id, token } = loginRes.body
+    const { email, password } = await createTestUser()
+    const { id, token } = await logIn(email, password)
 
     const updateRes = await request(app)
       .put(`/user/${id}/block`)
@@ -207,22 +186,15 @@ describe("Block user", async () => {
 
   it("User try block another user", async () => {
     const user1 = await createTestUser()
-    await createTestUser()
+    const user2 = await createTestUser()
 
-    const loginRes = await request(app)
-      .post("/auth/log-in")
-      .send({
-        email: user1.email,
-        password: user1.password,
-      })
-      .expect(200)
-
-    const { id, token } = loginRes.body
+    const { id: anotherUserID } = await logIn(user1.email, user1.password)
+    const { token } = await logIn(user2.email, user2.password)
 
     await request(app)
-      .put(`/user/${id + 1}`)
-      .set("Authorization", `Bearer ${token}`)
+      .put(`/user/2${anotherUserID}`)
       .send({ active: false })
+      .set("Authorization", `Bearer ${token}`)
       .expect(402, { error: "Access denied" })
   })
 })

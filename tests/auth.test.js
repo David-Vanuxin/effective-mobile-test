@@ -70,7 +70,9 @@ describe("Sign up and log in", () => {
 
     const { id, token } = await logIn(email, password)
 
-    const res = await request(app).get(`/user/${id}`).set("Authorization", `Bearer ${token}`)
+    const res = await request(app)
+      .get(`/user/${id}`)
+      .set("Authorization", `Bearer ${token}`)
 
     assert.notStrictEqual(res.body.role, "admin")
   })

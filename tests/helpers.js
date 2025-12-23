@@ -25,9 +25,9 @@ export async function createTestUser(role = "user") {
 
 export async function logIn(email, password) {
   const res = await request(app).post("/auth/log-in").send({
-      email: email,
-      password: password,
-    })
+    email: email,
+    password: password,
+  })
   return res.body
 }
 
@@ -35,7 +35,7 @@ export async function createAdmin() {
   const userData = generateRandomUserData()
   const admin = await AppDataSource.getRepository(User).create({
     ...userData,
-    role: "admin"
+    role: "admin",
   })
   await AppDataSource.getRepository(User).save(admin)
 
