@@ -10,11 +10,8 @@ authRouter.post("/sign-up", async (req, res) => {
   req.body.role = "user"
   req.body.actve = true
 
-  // console.log("sign in pwd", req.body.password)
-
   if (req.body.password) {
     req.body.password = calcHash(req.body.password)
-    // console.log("hash", req.body.password)
   } else {
     res.status(400).json({ error: "Password required" })
   }
@@ -33,7 +30,6 @@ authRouter.post("/log-in", async (req, res) => {
     return res.status(400).json({ error: "User not found" })
   }
 
-  // console.log(user.password, req.body.password, calcHash(req.body.password))
   if (user.password !== calcHash(req.body.password)) {
     return res.status(400).json({ error: "Invalid password" })
   }
