@@ -173,7 +173,8 @@ describe("Block user", async () => {
     const { email, password } = await createAdmin()
     const { token: adminAuthToken } = await logIn(email, password)
 
-    const { email: testUserEmail, password: testUserPwd } = await createTestUser()
+    const { email: testUserEmail, password: testUserPwd } =
+      await createTestUser()
     const { id: testUserID } = await logIn(testUserEmail, testUserPwd)
 
     const updateRes = await request(app)

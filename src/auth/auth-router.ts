@@ -22,6 +22,10 @@ authRouter.post("/sign-up", async (req, res) => {
 })
 
 authRouter.post("/log-in", async (req, res) => {
+  if (req.body.email === undefined) {
+    return res.status(400).json({ error: "Email required" })
+  }
+
   const user = await AppDataSource.getRepository(User).findOneBy({
     email: req.body.email,
   })
