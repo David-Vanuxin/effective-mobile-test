@@ -1,6 +1,6 @@
 {
-  "include": ["./src/"],
-  "exclude": ["node_modules/*", "tests/*", "build/*"],
+  "include": ["./src/", "./tests/"],
+  "exclude": ["node_modules/*", "build/*"],
   "compilerOptions": {
     "strictPropertyInitialization":false,
     /* Visit https://aka.ms/tsconfig to read more about this file */

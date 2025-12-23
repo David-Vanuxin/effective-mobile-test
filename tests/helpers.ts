@@ -1,9 +1,9 @@
 import request from "supertest"
-import app from "../build/app.js"
+import app from "../src/app.js"
 
-import { AppDataSource } from "../build/data-source.js"
-import User from "../build/entity/User.js"
-import calcHash from "../build/auth/password-hash.js"
+import { AppDataSource } from "../src/data-source.js"
+import User from "../src/entity/User.js"
+import calcHash from "../src/auth/password-hash.js"
 
 export function generateRandomUserData() {
   return {
@@ -13,6 +13,7 @@ export function generateRandomUserData() {
     email: `test${Math.round(Math.random() * 1000)}@mail.com`,
     password: "1234",
     birthdate: Date.now(),
+    role: "user",
   }
 }
 
@@ -24,7 +25,7 @@ export async function createTestUser(role = "user") {
   return user
 }
 
-export async function logIn(email, password) {
+export async function logIn(email: string, password: string) {
   const res = await request(app).post("/auth/log-in").send({
     email: email,
     password: password,

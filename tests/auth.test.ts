@@ -3,10 +3,10 @@ import { strict as assert } from "node:assert"
 import { generateRandomUserData, createTestUser, logIn } from "./helpers.js"
 import request from "supertest"
 
-import { AppDataSource } from "../build/data-source.js"
-import User from "../build/entity/User.js"
-import Session from "../build/entity/Session.js"
-import app from "../build/app.js"
+import { AppDataSource } from "../src/data-source.js"
+import User from "../src/entity/User.js"
+import Session from "../src/entity/Session.js"
+import app from "../src/app.js"
 
 describe("Sign up and log in", () => {
   before(async () => {

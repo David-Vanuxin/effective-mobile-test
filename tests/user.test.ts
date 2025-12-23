@@ -8,10 +8,10 @@ import {
 } from "./helpers.js"
 import request from "supertest"
 
-import { AppDataSource } from "../build/data-source.js"
-import User from "../build/entity/User.js"
-import Session from "../build/entity/Session.js"
-import app from "../build/app.js"
+import { AppDataSource } from "../src/data-source.js"
+import User from "../src/entity/User.js"
+import Session from "../src/entity/Session.js"
+import app from "../src/app.js"
 
 const testUser = generateRandomUserData()
 
@@ -49,7 +49,7 @@ describe("Get user info ( /user/id )", async () => {
   })
 
   it("For role=admin fetch another user's info", async () => {
-    const admin = await createAdmin(AppDataSource)
+    const admin = await createAdmin()
     const user = await createTestUser()
 
     const { token: adminToken } = await logIn(admin.email, admin.password)
@@ -60,9 +60,6 @@ describe("Get user info ( /user/id )", async () => {
       .set("Authorization", `Bearer ${adminToken}`)
 
     const userInfo = userInfoRes.body
-
-    delete userInfo.password
-    delete user.password
 
     assert.strictEqual(userInfo.id, userID)
     assert.strictEqual(userInfo.role, "user")
@@ -81,14 +78,16 @@ describe("Get user info ( /user/id )", async () => {
 
     assert.strictEqual(userInfo.id, id)
 
+    const fetchedUserInfo: any = Object.assign({}, userInfo)
     // object user don't have this properties
-    delete userInfo.id
-    delete userInfo.active
+    delete fetchedUserInfo.id
+    delete fetchedUserInfo.active
+    delete fetchedUserInfo.password
 
+    const createdUserInfo: any = Object.assign({}, user)
     // because password becames hash and I don't want calculate it
-    delete userInfo.password
-    delete user.password
-    assert.deepEqual(user, userInfo)
+    delete createdUserInfo.password
+    assert.deepEqual(createdUserInfo, fetchedUserInfo)
   })
 })
 
@@ -174,7 +173,7 @@ describe("Block user", async () => {
     const { email, password } = await createAdmin()
     const { token: adminAuthToken } = await logIn(email, password)
 
-    const { id: testUserEmail, password: testUserPwd } = await createTestUser()
+    const { email: testUserEmail, password: testUserPwd } = await createTestUser()
     const { id: testUserID } = await logIn(testUserEmail, testUserPwd)
 
     const updateRes = await request(app)
