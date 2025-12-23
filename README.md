@@ -28,10 +28,11 @@ POST /auth/sign-up
   "patronymic": "Иванович",
   "email": "user@example.com",
   "password": "1234",
-  "birthdate": 1698765432000,
-  "role": "user"  // или "admin"
+  "birthdate": 1698765432000, // timestamp Date.now()
 }
 ```
+Роль нового пользователя "user"<br>
+Из соображений безопасности через этот эндпоинт нельзя создать пользователя с ролью "admin" (в тестах создаётся через запрос к БД)
 
 **Успешный ответ:**
 ```json
@@ -54,10 +55,10 @@ POST /auth/log-in
 ```
 
 **Успешный ответ:**
-```json
+```jsonc
 {
   "id": 1,
-  "token": "123456787890890234"
+  "token": "123456787654" // строка с 12-значным числом
 }
 ```
 
@@ -91,7 +92,7 @@ Authorization: Bearer {token}
   "secondname": "Иван",
   "patronymic": "Иванович",
   "email": "user@example.com",
-  "birthdate": 1698765432000, // timestamp Date.now()
+  "birthdate": 1698765432000, 
   "role": "user",
   "active": true
 }
