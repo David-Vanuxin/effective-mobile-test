@@ -61,6 +61,9 @@ describe("Get user info ( /user/id )", async () => {
 
     const userInfo = userInfoRes.body
 
+    delete userInfo.password
+    delete user.password
+
     assert.strictEqual(userInfo.id, userID)
     assert.strictEqual(userInfo.role, "user")
   })
@@ -81,6 +84,10 @@ describe("Get user info ( /user/id )", async () => {
     // object user don't have this properties
     delete userInfo.id
     delete userInfo.active
+
+    // because password becames hash and I don't want calculate it
+    delete userInfo.password
+    delete user.password
     assert.deepEqual(user, userInfo)
   })
 })

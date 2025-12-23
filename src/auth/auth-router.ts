@@ -2,12 +2,23 @@ import User from "../entity/User.js"
 import Session from "../entity/Session.js"
 import express from "express"
 import { AppDataSource } from "../data-source.js"
+import calcHash from "./password-hash.js"
 
 const authRouter = express.Router()
 
 authRouter.post("/sign-up", async (req, res) => {
   req.body.role = "user"
   req.body.actve = true
+
+  // console.log("sign in pwd", req.body.password)
+
+  if (req.body.password) {
+    req.body.password = calcHash(req.body.password)
+    // console.log("hash", req.body.password)
+  } else {
+    res.status(400).json({ error: "Password required" })
+  }
+
   const user = await AppDataSource.getRepository(User).create(req.body)
   await AppDataSource.getRepository(User).save(user)
   res.json({ status: "OK" })
@@ -22,7 +33,8 @@ authRouter.post("/log-in", async (req, res) => {
     return res.status(400).json({ error: "User not found" })
   }
 
-  if (user.password !== req.body.password) {
+  // console.log(user.password, req.body.password, calcHash(req.body.password))
+  if (user.password !== calcHash(req.body.password)) {
     return res.status(400).json({ error: "Invalid password" })
   }
 

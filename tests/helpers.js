@@ -3,6 +3,7 @@ import app from "../build/app.js"
 
 import { AppDataSource } from "../build/data-source.js"
 import User from "../build/entity/User.js"
+import calcHash from "../build/auth/password-hash.js"
 
 export function generateRandomUserData() {
   return {
@@ -36,6 +37,7 @@ export async function createAdmin() {
   const admin = await AppDataSource.getRepository(User).create({
     ...userData,
     role: "admin",
+    password: calcHash(userData.password),
   })
   await AppDataSource.getRepository(User).save(admin)
 
